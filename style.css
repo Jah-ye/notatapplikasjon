@@ -1,0 +1,97 @@
+body {
+  font-family: Arial, sans-serif;
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 10px;
+  background-color: #f4f4f4;
+  line-height: 1.6;
+}
+
+/* Container for inndelingen av Todo lister og Notater */
+#container {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+#todoSection {
+  flex: 1;
+  background: #e8f0f2;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+#notesSection {
+  flex: 1;
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Overskrifter */
+h1 {
+  color: #333;
+  border-bottom: 2px solid #ccc;
+  padding-bottom: 5px;
+  margin-top: 0;
+}
+
+/* Input-felt */
+input[type="text"], textarea {
+  width: 100%;
+  padding: 8px;
+  margin-top: 8px;
+  margin-bottom: 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+/* Knapper */
+button {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #45a049;
+}
+
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+/* Liste */
+li {
+  background: #fff;
+  margin-bottom: 10px;
+  padding: 10px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Stil for oppgaver */
+li ul {
+  margin-top: 10px;
+}
+
+li span {
+  margin-left: 8px;
+  font-size: 16px;
+}
+
+/* oppgaver som er krysset av */
+.completed {
+  text-decoration: line-through;
+  color: #999;
+}

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Notatapplikasjon</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<body>
+  <div id="container">
+    <div id="todoSection">
+      <h1>Todo-lister</h1>
+      <input id="todoTitle" placeholder="Tittel">
+      <textarea id="todoTasks" placeholder="Oppgaver, en per linje"></textarea>
+      <button onclick="addTodo()">Lagre todo-liste</button>
+      <ul id="todosList"></ul>
+    </div>
+
+    <div id="notesSection">
+      <h1>Notater</h1>
+      <input id="noteTitle" placeholder="Tittel">
+      <textarea id="noteContent" placeholder="Innhold"></textarea>
+      <button onclick="addNote()">Lagre notat</button>
+      <ul id="notesList"></ul>
+    </div>
+  </div>
+
+<script>
+// --- Hent og lagre data i LocalStorage ---
+function loadData() {
+  const data = localStorage.getItem("notatapplikasjon");
+  return data ? JSON.parse(data) : { notes: [], todos: [] };
+}
+
+function saveData(data) {
+  localStorage.setItem("notatapplikasjon", JSON.stringify(data));
+}
+
+// --- Notater ---
+function addNote() {
+  const title = document.getElementById("noteTitle").value.trim();
+  const content = document.getElementById("noteContent").value.trim();
+  if (!title || !content) { alert("Fyll ut tittel og innhold"); return; }
+
+  const data = loadData();
+  data.notes.push({ title, content });
+  saveData(data);
+
+  document.getElementById("noteTitle").value = "";
+  document.getElementById("noteContent").value = "";
+
+  displayNotes();
+}
+
+function displayNotes() {
+  const list = document.getElementById("notesList");
+  list.innerHTML = "";
+  loadData().notes.forEach(n => {
+    const li = document.createElement("li");
+    li.textContent = `${n.title}: ${n.content}`;
+    list.appendChild(li);
+  });
+}
+
+// --- Todo-lister ---
+function addTodo() {
+  const title = document.getElementById("todoTitle").value.trim();
+  const tasksText = document.getElementById("todoTasks").value.trim();
+  if (!title || !tasksText) { alert("Fyll ut tittel og oppgaver"); return; }
+
+  const tasks = tasksText.split("\n").map(t => ({ text: t.trim(), completed: false }));
+  const data = loadData();
+  data.todos.push({ title, tasks });
+  saveData(data);
+
+  document.getElementById("todoTitle").value = "";
+  document.getElementById("todoTasks").value = "";
+
+  displayTodos();
+}
+
+function displayTodos() {
+  const list = document.getElementById("todosList");
+  list.innerHTML = "";
+  const todos = loadData().todos;
+
+  todos.forEach((todo, todoIndex) => {
+    const li = document.createElement("li");
+    const titleEl = document.createElement("strong");
+    titleEl.textContent = todo.title;
+    li.appendChild(titleEl);
+
+    const taskUl = document.createElement("ul");
+    todo.tasks.forEach((task, taskIndex) => {
+      const taskLi = document.createElement("li");
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = task.completed;
+
+      const label = document.createElement("span");
+      label.textContent = task.text;
+      if (task.completed) label.classList.add("completed");
+
+      checkbox.addEventListener("change", () => toggleTask(todoIndex, taskIndex, checkbox.checked, label));
+      taskLi.appendChild(checkbox);
+      taskLi.appendChild(label);
+      taskUl.appendChild(taskLi);
+    });
+
+    li.appendChild(taskUl);
+    list.appendChild(li);
+  });
+}
+
+// --- Kryss av oppgaver ---
+function toggleTask(todoIndex, taskIndex, completed, label) {
+  const data = loadData();
+  data.todos[todoIndex].tasks[taskIndex].completed = completed;
+  saveData(data);
+
+  if (completed) label.classList.add("completed");
+  else label.classList.remove("completed");
+}
+
+// --- Last inn eksisterende data når siden åpnes ---
+window.onload = () => {
+  displayNotes();
+  displayTodos();
+};
+</script>
+
+</body>
+</html>
