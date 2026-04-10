@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Notat & Todo</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <h1>Notat & Todo App</h1>
+
+  <div>
+    <h2>Notes</h2>
+    <input id="noteTitle" placeholder="Tittel">
+    <textarea id="noteContent" placeholder="Innhold"></textarea>
+    <button onclick="addNote()">Lagre notat</button>
+    <ul id="notesList"></ul>
+  </div>
+
+  <div>
+    <h2>Todos</h2>
+    <input id="todoTitle" placeholder="Tittel">
+    <textarea id="todoTasks" placeholder="Oppgaver (1 per linje)"></textarea>
+    <button onclick="addTodo()">Lagre todo</button>
+    <ul id="todosList"></ul>
+  </div>
+
+  <script src="script.js"></script>
+
+</body>
+</html>
