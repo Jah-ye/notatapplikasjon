@@ -8,7 +8,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🔥 FRONTEND HOSTING (FIXER GET /)
+// frontend hosting
 app.use(express.static("public"));
 
 app.get("/", (req, res) => {
@@ -17,7 +17,7 @@ app.get("/", (req, res) => {
 
 const FILE = "data.json";
 
-// 🔧 trygg lesing
+//  trygg lesing
 function readData() {
   try {
     if (!fs.existsSync(FILE)) return { notes: [], todos: [] };
@@ -32,7 +32,7 @@ function saveData(data) {
   fs.writeFileSync(FILE, JSON.stringify(data, null, 2));
 }
 
-/* ================= NOTES ================= */
+/* NOTES */
 
 app.get("/notes", (req, res) => {
   res.json(readData().notes);
@@ -59,7 +59,7 @@ app.delete("/notes/:index", (req, res) => {
   res.json({ ok: true });
 });
 
-/* ================= TODOS ================= */
+/* TODOS */
 
 app.get("/todos", (req, res) => {
   res.json(readData().todos);
