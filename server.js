@@ -180,7 +180,6 @@ app.delete("/todos/:index", (req, res) => {
 
 /* ================= START ================= */
 
-const PORT = 3000;
-app.listen(PORT, () => {
-  console.log(`Server kjører på http://localhost:${PORT}`);
+app.listen(3000, "0.0.0.0", () => {
+  console.log("Server kjører på port 3000");
 });
