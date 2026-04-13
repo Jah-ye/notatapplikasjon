@@ -172,10 +172,7 @@ app.patch("/tasks/:id", async (req, res) => {
 
 
 // DELETE TODO 
-/*
-   Viktig: vi sletter først tasks,
-   så todoen selv (manuell cascade)
-*/
+
 app.delete("/todos/:id", async (req, res) => {
   const id = req.params.id;
 
