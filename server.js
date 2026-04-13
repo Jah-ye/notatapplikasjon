@@ -114,6 +114,28 @@ app.post("/todos", (req, res) => {
   res.json({ ok: true });
 });
 
+app.patch("/todos/:todoIndex/:taskIndex", (req, res) => {
+  const data = readData();
+  const todoIndex = parseInt(req.params.todoIndex);
+  const taskIndex = parseInt(req.params.taskIndex);
+
+  if (
+    isNaN(todoIndex) ||
+    isNaN(taskIndex) ||
+    !data.todos[todoIndex] ||
+    !data.todos[todoIndex].tasks[taskIndex]
+  ) {
+    return res.status(404).json({ error: "Task finnes ikke" });
+  }
+
+  const task = data.todos[todoIndex].tasks[taskIndex];
+  task.completed = !task.completed;
+
+  saveData(data);
+
+  res.json({ ok: true });
+});
+
 // PUT
 app.put("/todos/:index", (req, res) => {
   const data = readData();

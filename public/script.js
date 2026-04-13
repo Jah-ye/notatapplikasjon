@@ -29,17 +29,59 @@ async function displayTodos() {
   const list = document.getElementById("todosList");
   list.innerHTML = "";
 
-  todos.forEach(todo => {
+  todos.forEach((todo, todoIndex) => {
     const li = document.createElement("li");
 
-    const tasks = todo.tasks.join("<br>");
+    const title = document.createElement("b");
+    title.textContent = todo.title;
+    li.appendChild(title);
 
-    li.innerHTML = `
-      <b>${todo.title}</b><br>
-      ${tasks}<br>
-      <button onclick="editTodo(${todo.id})">Rediger</button>
-      <button onclick="deleteTodo(${todo.id})">Slett</button>
-    `;
+    const taskList = document.createElement("ul");
+
+    (todo.tasks || []).forEach((task, taskIndex) => {
+      const taskLi = document.createElement("li");
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = task.completed;
+
+      const label = document.createElement("span");
+      label.textContent = task.text;
+
+      if (task.completed) {
+        label.style.textDecoration = "line-through";
+        label.style.opacity = "0.6";
+      }
+
+      // 🔥 toggle completed
+      checkbox.addEventListener("change", async () => {
+        await fetch(
+          `http://localhost:3000/todos/${todoIndex}/${taskIndex}`,
+          {
+            method: "PATCH"
+          }
+        );
+
+        displayTodos();
+      });
+
+      taskLi.appendChild(checkbox);
+      taskLi.appendChild(label);
+      taskList.appendChild(taskLi);
+    });
+
+    // knapper
+    const editBtn = document.createElement("button");
+    editBtn.textContent = "Rediger";
+    editBtn.onclick = () => editTodo(todoIndex);
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.textContent = "Slett";
+    deleteBtn.onclick = () => deleteTodo(todoIndex);
+
+    li.appendChild(taskList);
+    li.appendChild(editBtn);
+    li.appendChild(deleteBtn);
 
     list.appendChild(li);
   });
