@@ -23,20 +23,68 @@ async function displayNotes() {
 }
 
 async function displayTodos() {
-  const res = await fetch("/todos");
+  const res = await fetch("http://localhost:3000/todos");
   const todos = await res.json();
 
   const list = document.getElementById("todosList");
   list.innerHTML = "";
 
-  todos.forEach((t, i) => {
+  todos.forEach(todo => {
     const li = document.createElement("li");
-    li.textContent = t.title;
+
+    const tasks = todo.tasks.join("<br>");
+
+    li.innerHTML = `
+      <b>${todo.title}</b><br>
+      ${tasks}<br>
+      <button onclick="editTodo(${todo.id})">Rediger</button>
+      <button onclick="deleteTodo(${todo.id})">Slett</button>
+    `;
 
     list.appendChild(li);
   });
 }
 
+async function addTodo() {
+  const title = document.getElementById("todoTitle").value;
+  const tasks = document.getElementById("todoTasks")
+    .value.split("\n")
+    .filter(t => t.trim() !== "");
+
+  await fetch("http://localhost:3000/todos", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, tasks })
+  });
+
+  displayTodos();
+}
+
+async function deleteTodo(id) {
+  await fetch(`http://localhost:3000/todos/${id}`, {
+    method: "DELETE"
+  });
+
+  displayTodos();
+}
+
+async function editTodo(id) {
+  const title = prompt("Ny tittel:");
+  const tasks = prompt("Oppgaver (skil med komma):");
+
+  if (!title || !tasks) return;
+
+  await fetch(`http://localhost:3000/todos/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      title,
+      tasks: tasks.split(",").map(t => t.trim())
+    })
+  });
+
+  displayTodos();
+}
 async function addNote() {
   const title = document.getElementById("noteTitle").value;
   const content = document.getElementById("noteContent").value;
@@ -50,23 +98,21 @@ async function addNote() {
   displayNotes();
 }
 
-async function addTodo() {
-  const tasks = todoTasks.value.split("\n").map(t => ({
-    text: t,
-    completed: false
-  }));
+async function editNote(id, oldTitle, oldContent) {
+  const title = prompt("Ny tittel:", oldTitle);
+  const content = prompt("Nytt innhold:", oldContent);
 
-  await fetch("/todos", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      title: todoTitle.value,
-      tasks
-    })
+  if (!title || !content) return;
+
+  await fetch(`http://localhost:3000/notes/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, content })
   });
 
-  displayTodos();
+  displayNotes();
 }
+
 
 async function deleteNote(id) {
   await fetch(`http://localhost:3000/notes/${id}`, {
@@ -75,6 +121,7 @@ async function deleteNote(id) {
 
   displayNotes();
 }
+
 
 
 window.onload = () => {

@@ -17,7 +17,7 @@ app.get("/", (req, res) => {
 
 const FILE = "data.json";
 
-//  trygg lesing
+// trygg lesing
 function readData() {
   try {
     if (!fs.existsSync(FILE)) return { notes: [], todos: [] };
@@ -32,61 +32,133 @@ function saveData(data) {
   fs.writeFileSync(FILE, JSON.stringify(data, null, 2));
 }
 
-/* NOTES */
+/* ================= NOTES ================= */
 
+// GET
 app.get("/notes", (req, res) => {
   res.json(readData().notes);
 });
 
+// POST
 app.post("/notes", (req, res) => {
+  const { title, content } = req.body;
+
+  if (!title || !content) {
+    return res.status(400).json({ error: "Manglende data" });
+  }
+
   const data = readData();
-  data.notes.push(req.body);
+  data.notes.push({ title, content });
   saveData(data);
+
   res.json({ ok: true });
 });
 
+// PUT
 app.put("/notes/:index", (req, res) => {
   const data = readData();
-  data.notes[req.params.index] = req.body;
+  const index = parseInt(req.params.index);
+
+  if (isNaN(index) || !data.notes[index]) {
+    return res.status(404).json({ error: "Notat finnes ikke" });
+  }
+
+  data.notes[index] = req.body;
   saveData(data);
+
   res.json({ ok: true });
 });
 
+// DELETE
 app.delete("/notes/:index", (req, res) => {
   const data = readData();
-  data.notes.splice(req.params.index, 1);
+  const index = parseInt(req.params.index);
+
+  if (isNaN(index) || !data.notes[index]) {
+    return res.status(404).json({ error: "Notat finnes ikke" });
+  }
+
+  data.notes.splice(index, 1);
   saveData(data);
+
   res.json({ ok: true });
 });
 
-/* TODOS */
+/* ================= TODOS ================= */
 
+// GET
 app.get("/todos", (req, res) => {
   res.json(readData().todos);
 });
 
+// POST
 app.post("/todos", (req, res) => {
+  const { title, tasks } = req.body;
+
+  if (!title || !Array.isArray(tasks)) {
+    return res.status(400).json({ error: "Feil format" });
+  }
+
   const data = readData();
-  data.todos.push(req.body);
+
+  // sørger for riktig struktur
+  const formattedTasks = tasks.map(t =>
+    typeof t === "string"
+      ? { text: t, completed: false }
+      : { text: t.text, completed: t.completed || false }
+  );
+
+  data.todos.push({ title, tasks: formattedTasks });
   saveData(data);
+
   res.json({ ok: true });
 });
 
+// PUT
 app.put("/todos/:index", (req, res) => {
   const data = readData();
-  data.todos[req.params.index] = req.body;
+  const index = parseInt(req.params.index);
+
+  if (isNaN(index) || !data.todos[index]) {
+    return res.status(404).json({ error: "Todo finnes ikke" });
+  }
+
+  const { title, tasks } = req.body;
+
+  const formattedTasks = (tasks || []).map(t =>
+    typeof t === "string"
+      ? { text: t, completed: false }
+      : { text: t.text, completed: t.completed || false }
+  );
+
+  data.todos[index] = {
+    title,
+    tasks: formattedTasks
+  };
+
   saveData(data);
+
   res.json({ ok: true });
 });
 
+// DELETE
 app.delete("/todos/:index", (req, res) => {
   const data = readData();
-  data.todos.splice(req.params.index, 1);
+  const index = parseInt(req.params.index);
+
+  if (isNaN(index) || !data.todos[index]) {
+    return res.status(404).json({ error: "Todo finnes ikke" });
+  }
+
+  data.todos.splice(index, 1);
   saveData(data);
+
   res.json({ ok: true });
 });
+
+/* ================= START ================= */
 
 const PORT = 3000;
 app.listen(PORT, () => {
-  console.log(`Server kjører på port ${PORT}`);
+  console.log(`Server kjører på http://localhost:${PORT}`);
 });

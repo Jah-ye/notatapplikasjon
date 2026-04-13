@@ -1,23 +1,4 @@
 {
   "notes": [],
-  "todos": [
-    {
-      "title": "sdasd",
-      "tasks": [
-        {
-          "text": "asdasd",
-          "completed": false
-        }
-      ]
-    },
-    {
-      "title": "ssa",
-      "tasks": [
-        {
-          "text": "sas",
-          "completed": false
-        }
-      ]
-    }
-  ]
+  "todos": []
 }
