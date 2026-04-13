@@ -8,38 +8,44 @@ async function displayNotes() {
     const list = document.getElementById("notesList");
     list.innerHTML = "";
 
-    notes.forEach((note, index) => {
+    notes.forEach((note) => {
         const li = document.createElement("li");
-        const id = note.index !== undefined ? note.index : index;
+        // SQLite returnerer ID som "index" i GET-kallet vårt
+        const id = note.index; 
 
         li.innerHTML = `
-            <b>${note.title}</b><br>
-            ${note.content}<br>
-            <button onclick="editNote(${id})">Rediger</button>
-            <button onclick="deleteNote(${id})">Slett</button>
+            <div style="margin-bottom: 15px;">
+                <b>${note.title}</b><br>
+                ${note.content}<br>
+                <button onclick="editNote(${id})">Rediger</button>
+                <button onclick="deleteNote(${id})">Slett</button>
+            </div>
         `;
         list.appendChild(li);
     });
 }
 
 async function addNote() {
-    const title = document.getElementById("noteTitle").value;
-    const content = document.getElementById("noteContent").value;
+    const titleEl = document.getElementById("noteTitle");
+    const contentEl = document.getElementById("noteContent");
+
+    if (!titleEl.value || !contentEl.value) return alert("Fyll ut alt!");
 
     await fetch(`${API}/notes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, content })
+        body: JSON.stringify({ title: titleEl.value, content: contentEl.value })
     });
 
+    titleEl.value = "";
+    contentEl.value = "";
     displayNotes();
 }
 
 async function editNote(id) {
-    // Henter gjeldende notater for å fylle inn prompt med eksisterende tekst
     const res = await fetch(`${API}/notes`);
     const notes = await res.json();
-    const note = notes.find(n => (n.index !== undefined ? n.index : notes.indexOf(n)) == id);
+    const note = notes.find(n => n.index == id);
 
     const title = prompt("Ny tittel:", note ? note.title : "");
     const content = prompt("Nytt innhold:", note ? note.content : "");
@@ -56,15 +62,12 @@ async function editNote(id) {
 }
 
 async function deleteNote(id) {
-    await fetch(`${API}/notes/${id}`, {
-        method: "DELETE"
-    });
+    await fetch(`${API}/notes/${id}`, { method: "DELETE" });
     displayNotes();
 }
 
 // --- TODOS ---
 
-// Midlertidig liste for oppgaver før de lagres til serveren
 let currentTasks = [];
 
 function addTaskToList() {
@@ -73,33 +76,34 @@ function addTaskToList() {
     
     if (text) {
         currentTasks.push({ text: text, completed: false });
-        taskInput.value = ""; // Tøm feltet
+        taskInput.value = ""; 
         renderCurrentTasks();
     }
 }
 
 function renderCurrentTasks() {
     const tempList = document.getElementById("tempTasksList");
-    tempList.innerHTML = currentTasks.map((t, i) => `<li>${t.text}</li>`).join("");
+    tempList.innerHTML = currentTasks.map((t, i) => 
+        `<li>${t.text} <button onclick="currentTasks.splice(${i}, 1); renderCurrentTasks();">x</button></li>`
+    ).join("");
 }
 
 async function addTodo() {
-    const title = document.getElementById("todoTitle").value;
+    const titleEl = document.getElementById("todoTitle");
 
-    if (!title || currentTasks.length === 0) {
-        alert("Du må ha en tittel og minst én oppgave!");
+    if (!titleEl.value || currentTasks.length === 0) {
+        alert("Du må ha tittel og minst én oppgave!");
         return;
     }
 
     await fetch(`${API}/todos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, tasks: currentTasks })
+        body: JSON.stringify({ title: titleEl.value, tasks: currentTasks })
     });
 
-    // Nullstill alt etter lagring
     currentTasks = [];
-    document.getElementById("todoTitle").value = "";
+    titleEl.value = "";
     document.getElementById("tempTasksList").innerHTML = "";
     displayTodos();
 }
@@ -110,7 +114,7 @@ async function displayTodos() {
     const list = document.getElementById("todosList");
     list.innerHTML = "";
 
-    todos.forEach((todo, i) => {
+    todos.forEach((todo) => {
         const li = document.createElement("li");
         li.style.border = "1px solid #ccc";
         li.style.margin = "10px 0";
@@ -121,13 +125,13 @@ async function displayTodos() {
         const ul = document.createElement("ul");
         (todo.tasks || []).forEach((task, j) => {
             const taskLi = document.createElement("li");
-            
-            // Checkbox for å markere som ferdig
             const checkbox = document.createElement("input");
             checkbox.type = "checkbox";
             checkbox.checked = task.completed;
+            
+            // Bruker todo.id her (viktig for SQLite)
             checkbox.onchange = async () => {
-                await fetch(`${API}/todos/${i}/${j}`, { method: "PATCH" });
+                await fetch(`${API}/todos/${todo.id}/${j}`, { method: "PATCH" });
                 displayTodos();
             };
 
@@ -143,8 +147,10 @@ async function displayTodos() {
         const delBtn = document.createElement("button");
         delBtn.textContent = "Slett hele listen";
         delBtn.style.marginTop = "10px";
+        
+        // Bruker todo.id her for sletting
         delBtn.onclick = async () => {
-            await fetch(`${API}/todos/${i}`, { method: "DELETE" });
+            await fetch(`${API}/todos/${todo.id}`, { method: "DELETE" });
             displayTodos();
         };
 
@@ -153,31 +159,6 @@ async function displayTodos() {
         list.appendChild(li);
     });
 }
-
-async function deleteTodo(id) {
-    await fetch(`${API}/todos/${id}`, { method: "DELETE" });
-    displayTodos();
-}
-
-async function editTodo(id) {
-    const title = prompt("Ny tittel:");
-    const tasks = prompt("Oppgaver (skil med komma):");
-
-    if (!title || !tasks) return;
-
-    await fetch(`${API}/todos/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            title,
-            tasks: tasks.split(",").map(t => t.trim())
-        })
-    });
-
-    displayTodos();
-}
-
-// --- OPPSTART ---
 
 window.onload = () => {
     displayNotes();

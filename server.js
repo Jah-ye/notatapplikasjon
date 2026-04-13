@@ -1,185 +1,131 @@
 const express = require("express");
-const fs = require("fs");
 const path = require("path");
 const cors = require("cors");
+const sqlite3 = require("sqlite3");
+const { open } = require("sqlite");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
-
-// frontend hosting
 app.use(express.static("public"));
+
+let db;
+
+// Sett opp SQLite database
+(async () => {
+  db = await open({
+    filename: "./database.db",
+    driver: sqlite3.Database
+  });
+
+  // Lag tabeller hvis de ikke finnes
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS notes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT,
+      content TEXT
+    );
+    CREATE TABLE IF NOT EXISTS todos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT
+    );
+    CREATE TABLE IF NOT EXISTS tasks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      todo_id INTEGER,
+      text TEXT,
+      completed INTEGER DEFAULT 0,
+      FOREIGN KEY (todo_id) REFERENCES todos(id) ON DELETE CASCADE
+    );
+  `);
+})();
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-const FILE = "data.json";
-
-// trygg lesing
-function readData() {
-  try {
-    if (!fs.existsSync(FILE)) return { notes: [], todos: [] };
-    const data = fs.readFileSync(FILE, "utf-8");
-    return data ? JSON.parse(data) : { notes: [], todos: [] };
-  } catch {
-    return { notes: [], todos: [] };
-  }
-}
-
-function saveData(data) {
-  fs.writeFileSync(FILE, JSON.stringify(data, null, 2));
-}
-
 /* ================= NOTES ================= */
 
 // GET
-app.get("/notes", (req, res) => {
-  res.json(readData().notes);
+app.get("/notes", async (req, res) => {
+  const notes = await db.all("SELECT id AS 'index', title, content FROM notes");
+  res.json(notes);
 });
 
 // POST
-app.post("/notes", (req, res) => {
+app.post("/notes", async (req, res) => {
   const { title, content } = req.body;
+  if (!title || !content) return res.status(400).json({ error: "Manglende data" });
 
-  if (!title || !content) {
-    return res.status(400).json({ error: "Manglende data" });
-  }
-
-  const data = readData();
-  data.notes.push({ title, content });
-  saveData(data);
-
+  await db.run("INSERT INTO notes (title, content) VALUES (?, ?)", [title, content]);
   res.json({ ok: true });
 });
 
 // PUT
-app.put("/notes/:index", (req, res) => {
-  const data = readData();
-  const index = parseInt(req.params.index);
-
-  if (isNaN(index) || !data.notes[index]) {
-    return res.status(404).json({ error: "Notat finnes ikke" });
-  }
-
-  data.notes[index] = req.body;
-  saveData(data);
-
+app.put("/notes/:id", async (req, res) => {
+  const { title, content } = req.body;
+  await db.run("UPDATE notes SET title = ?, content = ? WHERE id = ?", [title, content, req.params.id]);
   res.json({ ok: true });
 });
 
 // DELETE
-app.delete("/notes/:index", (req, res) => {
-  const data = readData();
-  const index = parseInt(req.params.index);
-
-  if (isNaN(index) || !data.notes[index]) {
-    return res.status(404).json({ error: "Notat finnes ikke" });
-  }
-
-  data.notes.splice(index, 1);
-  saveData(data);
-
+app.delete("/notes/:id", async (req, res) => {
+  await db.run("DELETE FROM notes WHERE id = ?", [req.params.id]);
   res.json({ ok: true });
 });
 
 /* ================= TODOS ================= */
 
 // GET
-app.get("/todos", (req, res) => {
-  res.json(readData().todos);
+app.get("/todos", async (req, res) => {
+  const todos = await db.all("SELECT * FROM todos");
+  for (let todo of todos) {
+    const tasks = await db.all("SELECT id, text, completed FROM tasks WHERE todo_id = ?", [todo.id]);
+    todo.tasks = tasks.map(t => ({ ...t, completed: !!t.completed }));
+  }
+  res.json(todos);
 });
 
 // POST
-app.post("/todos", (req, res) => {
+app.post("/todos", async (req, res) => {
   const { title, tasks } = req.body;
+  if (!title || !Array.isArray(tasks)) return res.status(400).json({ error: "Feil format" });
 
-  if (!title || !Array.isArray(tasks)) {
-    return res.status(400).json({ error: "Feil format" });
+  const result = await db.run("INSERT INTO todos (title) VALUES (?)", [title]);
+  const todoId = result.lastID;
+
+  for (let task of tasks) {
+    await db.run("INSERT INTO tasks (todo_id, text, completed) VALUES (?, ?, ?)", 
+      [todoId, task.text, task.completed ? 1 : 0]);
   }
-
-  const data = readData();
-
-  // sørger for riktig struktur
-  const formattedTasks = tasks.map(t =>
-    typeof t === "string"
-      ? { text: t, completed: false }
-      : { text: t.text, completed: t.completed || false }
-  );
-
-  data.todos.push({ title, tasks: formattedTasks });
-  saveData(data);
-
   res.json({ ok: true });
 });
 
-app.patch("/todos/:todoIndex/:taskIndex", (req, res) => {
-  const data = readData();
-  const todoIndex = parseInt(req.params.todoIndex);
-  const taskIndex = parseInt(req.params.taskIndex);
+// PATCH (Toggle checkbox)
+app.patch("/todos/:todoId/:taskIndex", async (req, res) => {
+  // Merk: Siden vi bruker SQLite, henter vi her oppgavene for en todo og toggler den spesifikke
+  const tasks = await db.all("SELECT id, completed FROM tasks WHERE todo_id = ?", [req.params.todoId]);
+  const task = tasks[req.params.taskIndex];
 
-  if (
-    isNaN(todoIndex) ||
-    isNaN(taskIndex) ||
-    !data.todos[todoIndex] ||
-    !data.todos[todoIndex].tasks[taskIndex]
-  ) {
-    return res.status(404).json({ error: "Task finnes ikke" });
+  if (task) {
+    const newStatus = task.completed ? 0 : 1;
+    await db.run("UPDATE tasks SET completed = ? WHERE id = ?", [newStatus, task.id]);
+    res.json({ ok: true });
+  } else {
+    res.status(404).json({ error: "Task finnes ikke" });
   }
-
-  const task = data.todos[todoIndex].tasks[taskIndex];
-  task.completed = !task.completed;
-
-  saveData(data);
-
-  res.json({ ok: true });
 });
 
-// PUT
-app.put("/todos/:index", (req, res) => {
-  const data = readData();
-  const index = parseInt(req.params.index);
-
-  if (isNaN(index) || !data.todos[index]) {
-    return res.status(404).json({ error: "Todo finnes ikke" });
-  }
-
-  const { title, tasks } = req.body;
-
-  const formattedTasks = (tasks || []).map(t =>
-    typeof t === "string"
-      ? { text: t, completed: false }
-      : { text: t.text, completed: t.completed || false }
-  );
-
-  data.todos[index] = {
-    title,
-    tasks: formattedTasks
-  };
-
-  saveData(data);
-
-  res.json({ ok: true });
-});
-
-// DELETE
-app.delete("/todos/:index", (req, res) => {
-  const data = readData();
-  const index = parseInt(req.params.index);
-
-  if (isNaN(index) || !data.todos[index]) {
-    return res.status(404).json({ error: "Todo finnes ikke" });
-  }
-
-  data.todos.splice(index, 1);
-  saveData(data);
-
+// DELETE TODO
+app.delete("/todos/:id", async (req, res) => {
+  await db.run("DELETE FROM tasks WHERE todo_id = ?", [req.params.id]);
+  await db.run("DELETE FROM todos WHERE id = ?", [req.params.id]);
   res.json({ ok: true });
 });
 
 /* ================= START ================= */
 
-app.listen(3000, "0.0.0.0", () => {
-  console.log("Server kjører på port 3000");
+const PORT = 3000;
+app.listen(PORT, () => {
+  console.log(`Server kjører på http://localhost:${PORT}`);
 });
