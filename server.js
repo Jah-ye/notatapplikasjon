@@ -45,7 +45,8 @@ startServer();
 
 /* --- API FOR NOTATER --- */
 app.get("/notes", async (req, res) => {
-  const notes = await db.all("SELECT * FROM notes ORDER BY id DESC");
+  // Vi henter id eksplisitt
+  const notes = await db.all("SELECT id, title, content FROM notes ORDER BY id DESC");
   res.json(notes);
 });
 
