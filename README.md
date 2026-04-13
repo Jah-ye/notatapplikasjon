@@ -1,23 +1,37 @@
-# Notatapplikasjon med REST-API
+Notat & Todo Applikasjon
+Beskrivelse av løsningen
 
-# Beskrivelse
-Dette er en enkel notatapplikasjon som lar brukere:  
-- Lage tekstnotater med tittel og innhold  
-- Lage todo-lister med tittel og oppgaver (hver oppgave har status fullført/ikke fullført)  
+Dette er en enkel webapplikasjon for notater og todo-lister. Brukeren kan opprette notater, lage oppgaver og organisere dem i lister via et enkelt og brukervennlig grensesnitt.
 
-Løsningen består av:  
-1. Server: Node.js + litt grunnleggende Express som lagrer data i en JSON-fil (`data.json`)  
-2. Klient: HTML + JavaScript som kommuniserer med serveren via REST-API  
+Applikasjonen består av:
 
-Dataene håndteres i JSON-format, og både notater og todo-lister kan hentes og legges til dynamisk.
+Frontend: HTML, CSS og JavaScript
+Backend: Node.js med Express API
+Database: SQLite 
 
----
+Funksjonalitet:
+Opprette og lagre notater
+Lage todo-lister med flere oppgaver
+Hente og vise lagrede data fra server
+Kommunikasjon mellom klient og server via REST API
 
-## Installere og starte serveren
 
-1. Sørg for at [Node.js](https://nodejs.org/) er installert.  
-2. Åpne terminalen i prosjektmappen.  
-3. Installer nødvendige pakker i terminalen:
 
-npm init -y
-npm install express cors
+Hvordan installere og starte serveren
+
+Installer Node.js
+Gå til prosjektmappen i terminalen
+Installer nødvendige pakker:
+npm install express cors sqlite3
+Start serveren:
+node server.js
+
+Serveren kjører vanligvis på http://localhost:3000
+
+Hvordan starte klienten
+
+Åpne index.html i nettleseren.
+For riktig API-funksjonalitet anbefales det å bruke Live Server i VS Code:
+
+Høyreklikk index.html
+Velg Open with Live Server!
