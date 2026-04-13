@@ -26,7 +26,7 @@ npm install express cors sqlite3
 Start serveren:
 node server.js
 
-Serveren kjører vanligvis på http://localhost:3000
+Serveren kjører vanligvis på http://192.168.20.62:3000/ eller http://localhost:3000 på hvis du ønsker å se dette lokalt via Live Server.
 
 Hvordan starte klienten
 

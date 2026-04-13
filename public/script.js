@@ -1,3 +1,4 @@
+// API er separert for å gjøre koden mer fleksibel og lett å bytte mellom lokal og ekstern server uten å endre fetch-kallene.
 const API = "";
 
 /* NOTATER */
@@ -86,9 +87,7 @@ async function deleteNote(id) {
 }
 
 
-/* =================================================
-   TODO LISTER
-================================================= */
+/* TODO LISTER */
 
 let currentTasks = [];
 
