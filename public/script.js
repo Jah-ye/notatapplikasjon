@@ -1,133 +1,124 @@
-const API = ""; // Relativ URL fungerer best for IP-tilgang
+const API = "/api";
 
 // --- NOTATER ---
-async function displayNotes() {
+async function fetchNotes() {
     const res = await fetch(`${API}/notes`);
     const notes = await res.json();
-    const list = document.getElementById("notesList");
-    if (!list) return;
-
-    // Kun oppdater hvis innholdet faktisk er annerledes (for å unngå blinking)
-    const newHTML = notes.map(note => `
-        <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 5px; background: #fff;">
-            <b>${note.title}</b><br>${note.content}<br><br>
-            <button onclick="editNote(${note.id})">Rediger</button>
-            <button onclick="deleteNote(${note.id})" style="background:#ff4d4d; color:white;">Slett</button>
+    const container = document.getElementById("notesContainer");
+    
+    container.innerHTML = notes.map(n => `
+        <div class="card">
+            <h3>${n.title}</h3>
+            <p>${n.content}</p>
+            <button onclick="editNote(${n.id}, '${n.title}', '${n.content}')">Rediger</button>
+            <button class="btn-danger" onclick="deleteNote(${n.id})">Slett</button>
         </div>
     `).join("");
-
-    if (list.innerHTML !== newHTML) list.innerHTML = newHTML;
 }
 
-async function addNote() {
+async function saveNote() {
     const title = document.getElementById("noteTitle").value;
     const content = document.getElementById("noteContent").value;
-    if (!title || !content) return alert("Fyll ut begge felt");
+    if(!title || !content) return alert("Fyll ut alt!");
 
     await fetch(`${API}/notes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, content })
     });
+    
     document.getElementById("noteTitle").value = "";
     document.getElementById("noteContent").value = "";
-    displayNotes();
+    fetchNotes();
 }
 
-async function editNote(id) {
-    const title = prompt("Ny tittel:");
-    const content = prompt("Nytt innhold:");
+async function editNote(id, oldTitle, oldContent) {
+    const title = prompt("Ny tittel:", oldTitle);
+    const content = prompt("Nytt innhold:", oldContent);
     if (!title || !content) return;
+
     await fetch(`${API}/notes/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, content })
     });
-    displayNotes();
+    fetchNotes();
 }
 
 async function deleteNote(id) {
-    if (confirm("Slette notat?")) {
+    if(confirm("Slette dette notatet?")) {
         await fetch(`${API}/notes/${id}`, { method: "DELETE" });
-        displayNotes();
+        fetchNotes();
     }
 }
 
-// --- TODOS ---
-let currentTasks = [];
+// --- TODO LISTER ---
+let tempTasks = [];
 
-function addTaskToList() {
-    const input = document.getElementById("todoTaskInput");
-    if (input.value.trim()) {
-        currentTasks.push({ text: input.value, completed: false });
+function addTempTask() {
+    const input = document.getElementById("taskInput");
+    if(input.value) {
+        tempTasks.push({ text: input.value, completed: false });
         input.value = "";
         renderTempTasks();
     }
 }
 
 function renderTempTasks() {
-    const list = document.getElementById("tempTasksList");
-    list.innerHTML = currentTasks.map((t, i) => `<li>${t.text} <small onclick="currentTasks.splice(${i},1);renderTempTasks()" style="color:red; cursor:pointer;">(fjern)</small></li>`).join("");
+    document.getElementById("tempTasksList").innerHTML = tempTasks.map(t => `<li>${t.text}</li>`).join("");
 }
 
-async function addTodo() {
+async function saveTodo() {
     const title = document.getElementById("todoTitle").value;
-    if (!title || currentTasks.length === 0) return alert("Mangler tittel eller oppgaver");
+    if(!title || tempTasks.length === 0) return alert("Trenger tittel og oppgaver!");
 
     await fetch(`${API}/todos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, tasks: currentTasks })
+        body: JSON.stringify({ title, tasks: tempTasks })
     });
 
-    currentTasks = [];
+    tempTasks = [];
     document.getElementById("todoTitle").value = "";
-    document.getElementById("tempTasksList").innerHTML = "";
-    displayTodos();
+    renderTempTasks();
+    fetchTodos();
 }
 
-async function displayTodos() {
+async function fetchTodos() {
     const res = await fetch(`${API}/todos`);
     const todos = await res.json();
-    const list = document.getElementById("todosList");
-    if (!list) return;
+    const container = document.getElementById("todosContainer");
 
-    const newHTML = todos.map(todo => `
-        <div style="border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; border-radius: 8px; background: #f9f9f9;">
-            <h3 style="margin-top:0">${todo.title}</h3>
-            <ul style="list-style:none; padding:0">
-                ${todo.tasks.map(task => `
-                    <li>
-                        <input type="checkbox" ${task.completed ? "checked" : ""} onchange="toggleTask(${todo.id}, ${task.id})">
-                        <span style="${task.completed ? 'text-decoration:line-through; color:gray' : ''}">${task.text}</span>
+    container.innerHTML = todos.map(todo => `
+        <div class="card">
+            <h3>${todo.title}</h3>
+            <ul>
+                ${todo.tasks.map(t => `
+                    <li style="text-decoration: ${t.completed ? 'line-through' : 'none'}">
+                        <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTask(${t.id})">
+                        ${t.text}
                     </li>
                 `).join("")}
             </ul>
-            <button onclick="deleteTodo(${todo.id})" style="background:#ff4d4d; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:3px;">Slett liste</button>
+            <button class="btn-danger" onclick="deleteTodo(${todo.id})">Slett liste</button>
         </div>
     `).join("");
-
-    if (list.innerHTML !== newHTML) list.innerHTML = newHTML;
 }
 
-async function toggleTask(todoId, taskId) {
-    await fetch(`${API}/todos/${todoId}/tasks/${taskId}`, { method: "PATCH" });
-    displayTodos();
+async function toggleTask(id) {
+    await fetch(`${API}/tasks/${id}`, { method: "PATCH" });
+    fetchTodos();
 }
 
 async function deleteTodo(id) {
     await fetch(`${API}/todos/${id}`, { method: "DELETE" });
-    displayTodos();
+    fetchTodos();
 }
 
-// --- SYNKRONISERING ---
-// Denne kjører hvert 5. sekund for å hente endringer fra andre klienter
+// Automatisk oppdatering hvert 5. sekund
 setInterval(() => {
-    displayNotes();
-    displayTodos();
+    fetchNotes();
+    fetchTodos();
 }, 5000);
 
-window.onload = () => {
-    displayNotes();
-    displayTodos();
-};
+window.onload = () => { fetchNotes(); fetchTodos(); };
