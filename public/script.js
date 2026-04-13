@@ -1,172 +1,185 @@
-const API = ""; 
-// tom fordi frontend og backend er samme server 
+const API = "http://localhost:3000";
+
+// --- NOTATER ---
 
 async function displayNotes() {
-  const res = await fetch("http://localhost:3000/notes");
-  const notes = await res.json();
+    const res = await fetch(`${API}/notes`);
+    const notes = await res.json();
+    const list = document.getElementById("notesList");
+    list.innerHTML = "";
 
-  const list = document.getElementById("notesList");
-  list.innerHTML = "";
+    notes.forEach((note, index) => {
+        const li = document.createElement("li");
+        const id = note.index !== undefined ? note.index : index;
 
-  notes.forEach(note => {
-    const li = document.createElement("li");
-
-    li.innerHTML = `
-      <b>${note.title}</b><br>
-      ${note.content}<br>
-      <button onclick="editNote(${note.id}, '${note.title}', \`${note.content}\`)">Rediger</button>
-      <button onclick="deleteNote(${note.id})">Slett</button>
-    `;
-
-    list.appendChild(li);
-  });
+        li.innerHTML = `
+            <b>${note.title}</b><br>
+            ${note.content}<br>
+            <button onclick="editNote(${id})">Rediger</button>
+            <button onclick="deleteNote(${id})">Slett</button>
+        `;
+        list.appendChild(li);
+    });
 }
 
-async function displayTodos() {
-  const res = await fetch("http://localhost:3000/todos");
-  const todos = await res.json();
+async function addNote() {
+    const title = document.getElementById("noteTitle").value;
+    const content = document.getElementById("noteContent").value;
 
-  const list = document.getElementById("todosList");
-  list.innerHTML = "";
-
-  todos.forEach((todo, todoIndex) => {
-    const li = document.createElement("li");
-
-    const title = document.createElement("b");
-    title.textContent = todo.title;
-    li.appendChild(title);
-
-    const taskList = document.createElement("ul");
-
-    (todo.tasks || []).forEach((task, taskIndex) => {
-      const taskLi = document.createElement("li");
-
-      const checkbox = document.createElement("input");
-      checkbox.type = "checkbox";
-      checkbox.checked = task.completed;
-
-      const label = document.createElement("span");
-      label.textContent = task.text;
-
-      if (task.completed) {
-        label.style.textDecoration = "line-through";
-        label.style.opacity = "0.6";
-      }
-
-      // 🔥 toggle completed
-      checkbox.addEventListener("change", async () => {
-        await fetch(
-          `http://localhost:3000/todos/${todoIndex}/${taskIndex}`,
-          {
-            method: "PATCH"
-          }
-        );
-
-        displayTodos();
-      });
-
-      taskLi.appendChild(checkbox);
-      taskLi.appendChild(label);
-      taskList.appendChild(taskLi);
+    await fetch(`${API}/notes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, content })
     });
 
-    // knapper
-    const editBtn = document.createElement("button");
-    editBtn.textContent = "Rediger";
-    editBtn.onclick = () => editTodo(todoIndex);
+    displayNotes();
+}
 
-    const deleteBtn = document.createElement("button");
-    deleteBtn.textContent = "Slett";
-    deleteBtn.onclick = () => deleteTodo(todoIndex);
+async function editNote(id) {
+    // Henter gjeldende notater for å fylle inn prompt med eksisterende tekst
+    const res = await fetch(`${API}/notes`);
+    const notes = await res.json();
+    const note = notes.find(n => (n.index !== undefined ? n.index : notes.indexOf(n)) == id);
 
-    li.appendChild(taskList);
-    li.appendChild(editBtn);
-    li.appendChild(deleteBtn);
+    const title = prompt("Ny tittel:", note ? note.title : "");
+    const content = prompt("Nytt innhold:", note ? note.content : "");
 
-    list.appendChild(li);
-  });
+    if (!title || !content) return;
+
+    await fetch(`${API}/notes/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, content })
+    });
+
+    displayNotes();
+}
+
+async function deleteNote(id) {
+    await fetch(`${API}/notes/${id}`, {
+        method: "DELETE"
+    });
+    displayNotes();
+}
+
+// --- TODOS ---
+
+// Midlertidig liste for oppgaver før de lagres til serveren
+let currentTasks = [];
+
+function addTaskToList() {
+    const taskInput = document.getElementById("todoTaskInput");
+    const text = taskInput.value.trim();
+    
+    if (text) {
+        currentTasks.push({ text: text, completed: false });
+        taskInput.value = ""; // Tøm feltet
+        renderCurrentTasks();
+    }
+}
+
+function renderCurrentTasks() {
+    const tempList = document.getElementById("tempTasksList");
+    tempList.innerHTML = currentTasks.map((t, i) => `<li>${t.text}</li>`).join("");
 }
 
 async function addTodo() {
-  const title = document.getElementById("todoTitle").value;
-  const tasks = document.getElementById("todoTasks")
-    .value.split("\n")
-    .filter(t => t.trim() !== "");
+    const title = document.getElementById("todoTitle").value;
 
-  await fetch("http://localhost:3000/todos", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title, tasks })
-  });
+    if (!title || currentTasks.length === 0) {
+        alert("Du må ha en tittel og minst én oppgave!");
+        return;
+    }
 
-  displayTodos();
+    await fetch(`${API}/todos`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, tasks: currentTasks })
+    });
+
+    // Nullstill alt etter lagring
+    currentTasks = [];
+    document.getElementById("todoTitle").value = "";
+    document.getElementById("tempTasksList").innerHTML = "";
+    displayTodos();
+}
+
+async function displayTodos() {
+    const res = await fetch(`${API}/todos`);
+    const todos = await res.json();
+    const list = document.getElementById("todosList");
+    list.innerHTML = "";
+
+    todos.forEach((todo, i) => {
+        const li = document.createElement("li");
+        li.style.border = "1px solid #ccc";
+        li.style.margin = "10px 0";
+        li.style.padding = "10px";
+        
+        li.innerHTML = `<b>${todo.title}</b>`;
+
+        const ul = document.createElement("ul");
+        (todo.tasks || []).forEach((task, j) => {
+            const taskLi = document.createElement("li");
+            
+            // Checkbox for å markere som ferdig
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.checked = task.completed;
+            checkbox.onchange = async () => {
+                await fetch(`${API}/todos/${i}/${j}`, { method: "PATCH" });
+                displayTodos();
+            };
+
+            const span = document.createElement("span");
+            span.textContent = task.text;
+            if (task.completed) span.style.textDecoration = "line-through";
+
+            taskLi.appendChild(checkbox);
+            taskLi.appendChild(span);
+            ul.appendChild(taskLi);
+        });
+
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "Slett hele listen";
+        delBtn.style.marginTop = "10px";
+        delBtn.onclick = async () => {
+            await fetch(`${API}/todos/${i}`, { method: "DELETE" });
+            displayTodos();
+        };
+
+        li.appendChild(ul);
+        li.appendChild(delBtn);
+        list.appendChild(li);
+    });
 }
 
 async function deleteTodo(id) {
-  await fetch(`http://localhost:3000/todos/${id}`, {
-    method: "DELETE"
-  });
-
-  displayTodos();
+    await fetch(`${API}/todos/${id}`, { method: "DELETE" });
+    displayTodos();
 }
 
 async function editTodo(id) {
-  const title = prompt("Ny tittel:");
-  const tasks = prompt("Oppgaver (skil med komma):");
+    const title = prompt("Ny tittel:");
+    const tasks = prompt("Oppgaver (skil med komma):");
 
-  if (!title || !tasks) return;
+    if (!title || !tasks) return;
 
-  await fetch(`http://localhost:3000/todos/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      title,
-      tasks: tasks.split(",").map(t => t.trim())
-    })
-  });
+    await fetch(`${API}/todos/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            title,
+            tasks: tasks.split(",").map(t => t.trim())
+        })
+    });
 
-  displayTodos();
-}
-async function addNote() {
-  const title = document.getElementById("noteTitle").value;
-  const content = document.getElementById("noteContent").value;
-
-  await fetch("http://localhost:3000/notes", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title, content })
-  });
-
-  displayNotes();
+    displayTodos();
 }
 
-async function editNote(id, oldTitle, oldContent) {
-  const title = prompt("Ny tittel:", oldTitle);
-  const content = prompt("Nytt innhold:", oldContent);
-
-  if (!title || !content) return;
-
-  await fetch(`http://localhost:3000/notes/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title, content })
-  });
-
-  displayNotes();
-}
-
-
-async function deleteNote(id) {
-  await fetch(`http://localhost:3000/notes/${id}`, {
-    method: "DELETE"
-  });
-
-  displayNotes();
-}
-
-
+// --- OPPSTART ---
 
 window.onload = () => {
-  displayNotes();
-  displayTodos();
+    displayNotes();
+    displayTodos();
 };

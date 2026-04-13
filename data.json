@@ -1,4 +1,19 @@
 {
-  "notes": [],
-  "todos": []
+  "notes": [
+    {
+      "title": "sadas",
+      "content": "asdsad"
+    }
+  ],
+  "todos": [
+    {
+      "title": "adsd",
+      "tasks": [
+        {
+          "text": "asda",
+          "completed": false
+        }
+      ]
+    }
+  ]
 }

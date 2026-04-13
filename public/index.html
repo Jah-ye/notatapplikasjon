@@ -7,23 +7,27 @@
 
 <body>
 
-  <h1>Notatapplikasjon</h1>
+  <h1>Notat og Todo</h1>
 
   <div>
-    <h2>Notes</h2>
+    <h2>Notater</h2>
     <input id="noteTitle" placeholder="Tittel">
     <textarea id="noteContent" placeholder="Innhold"></textarea>
     <button onclick="addNote()">Lagre notat</button>
     <ul id="notesList"></ul>
   </div>
 
-  <div>
-    <h2>Todos</h2>
-    <input id="todoTitle" placeholder="Tittel">
-    <textarea id="todoTasks" placeholder="Oppgaver (1 per linje)"></textarea>
-    <button onclick="addTodo()">Lagre todo</button>
-    <ul id="todosList"></ul>
-  </div>
+  <div id="todo-form">
+    <input type="text" id="todoTitle" placeholder="Tittel (f.eks. Handleliste)">
+    <br><br>
+    <input type="text" id="todoTaskInput" placeholder="Ny oppgave...">
+    <button onclick="addTaskToList()">Legg til oppgave</button>
+    
+    <ul id="tempTasksList"></ul> <button onclick="addTodo()" style="background-color: #4CAF50; color: white;">Lagre hele To-Do listen</button>
+</div>
+
+<hr>
+<ul id="todosList"></ul>
 
   <script src="script.js"></script>
 
