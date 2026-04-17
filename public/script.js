@@ -42,7 +42,7 @@ async function addNote() { // funksjon for å legge til notat
     const title = document.getElementById("noteTitle").value;
     const content = document.getElementById("noteContent").value;
 
-    if (!title || !content) { // sjekker at begge feltene er fylt ut
+    if (!title || !content) { // Validerer at begge feltene er fylt ut
         return alert("Fyll ut både tittel og innhold"); // Viser feilmelding
     }
 
@@ -212,7 +212,7 @@ async function deleteTodo(id) {
 
 
 
-setInterval(() => { // Kjører hvert 5. sekund for å holde UI synkronisert
+setInterval(() => { // Kjører hvert 5. sekund for å holde UI synkronisert.
     displayNotes(); // Oppdaterer notater
     displayTodos(); // Oppdaterer todos
 }, 5000);

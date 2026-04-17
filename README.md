@@ -31,4 +31,4 @@ Serveren kjører vanligvis på http://192.168.20.62:3000/ eller http://localhost
 
 Hvordan starte klienten
 
-Åpne index.html direkte i en nettleser. For best mulig funksjonalitet med APIen anbefales det å bruke Live Server i Visual Studio Code: høyreklikk på index.html og velg “Open with Live Server”.
+Det anbefales å bruke Live Server i Visual Studio Code: høyreklikk på index.html og velg “Go Live”.
