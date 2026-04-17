@@ -159,7 +159,6 @@ app.patch("/tasks/:id", async (req, res) => {
 });
 
 
-
 app.delete("/todos/:id", async (req, res) => {
   const id = req.params.id; // Henter ID fra URL
 
